@@ -1,9 +1,10 @@
-import { useFocusEffect } from 'expo-router'; // Sayfaya geri dönüldüğünü anlamak için
+import { useFocusEffect, useRouter } from 'expo-router'; // Sayfaya geri dönüldüğünü anlamak için
 import { useCallback, useState } from 'react';
 import { Alert, FlatList, Text, TouchableOpacity, View } from 'react-native';
 import { addExpense, deleteExpense, getExpenses } from '../../db/queries';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const [data, setData] = useState<any[]>([]);
 
   // Verileri yükle
@@ -52,7 +53,7 @@ export default function HomeScreen() {
         renderItem={({ item }) => (
           <TouchableOpacity 
             onLongPress={() => handleDelete(item.id)} // Uzun basınca sil
-            className="bg-gray-800 p-4 rounded-xl mb-3 flex-row justify-between items-center border border-gray-700"
+            className="bg-gray-800 p-4 rournded-xl mb-3 flex-row justify-between items-center border border-gray-700"
           >
             <View>
               <Text className="text-white font-semibold text-lg">{item.title}</Text>
@@ -70,9 +71,8 @@ export default function HomeScreen() {
         }
       />
 
-      {/* Floating Action Button (FAB) - Sağ Alt Köşe Butonu */}
       <TouchableOpacity 
-        onPress={handleAddTest}
+        onPress={() => router.push('/add-expense')}
         className="absolute bottom-10 right-6 bg-blue-600 w-16 h-16 rounded-full items-center justify-center shadow-lg active:bg-blue-700"
       >
         <Text className="text-white text-4xl pb-1">+</Text>

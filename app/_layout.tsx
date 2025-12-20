@@ -33,6 +33,15 @@ export default function RootLayout() {
   return (
     <Stack>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="add-expense" 
+        options={{
+          presentation: "modal",
+          title: "New Expense",
+          headerStyle: {backgroundColor: "#111827"},
+          headerTintColor: "#FFFFFF",
+        }}
+      />
     </Stack>
   )
 
