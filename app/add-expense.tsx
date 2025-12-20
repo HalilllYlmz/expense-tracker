@@ -1,4 +1,6 @@
+import { CATEGORIES } from "@/constants/Categories";
 import { addExpense } from "@/db/queries";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { clsx } from "clsx";
 import { useRouter } from "expo-router";
@@ -10,6 +12,7 @@ const expenseSchema = z.object({
   title: z.string().min(2, "Başlık en az 2 karakter olmalı"),
   amount: z.coerce.number().min(1, "Tutar en az 1 olmalı"),
   type: z.enum(["income", "expense"]),
+  category: z.string(),
 });
 
 type ExpenseFormData = z.infer<typeof expenseSchema>;
@@ -29,6 +32,7 @@ export default function AddExpenseScreen() {
       title: "",
       amount: undefined,
       type: "expense",
+      category: "other",
     },
   });
 
@@ -109,6 +113,41 @@ export default function AddExpenseScreen() {
         {errors.amount && (
           <Text className="text-red-400 mt-1">{errors.amount.message}</Text>
         )}
+      </View>
+      <View className="mb-8">
+        <Text className="text-gray-400 mb-3 font-medium">Kategori</Text>
+        <View className="flex-row flex-wrap gap-3">
+          {/* Seçili tiple (Gelir/Gider) eşleşen kategorileri listele */}
+          {CATEGORIES[selectedType].map((cat) => {
+            const isSelected = watch("category") === cat.id;
+            return (
+              <TouchableOpacity
+                key={cat.id}
+                onPress={() => setValue("category", cat.id)}
+                className={clsx(
+                  "flex-row items-center px-4 py-2 rounded-full border",
+                  isSelected
+                    ? "bg-blue-600 border-blue-600"
+                    : "bg-gray-800 border-gray-700"
+                )}
+              >
+                <Ionicons
+                  name={cat.icon as any}
+                  size={18}
+                  color={isSelected ? "white" : "#9ca3af"}
+                />
+                <Text
+                  className={clsx(
+                    "ml-2 font-medium",
+                    isSelected ? "text-white" : "text-gray-400"
+                  )}
+                >
+                  {cat.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       <TouchableOpacity
