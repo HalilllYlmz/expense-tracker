@@ -28,14 +28,15 @@ export const addExpense = async (
   title: string,
   amount: number,
   category: string,
-  type: "expense" | "income" = "expense"
+  type: "expense" | "income" = "expense",
+  dateTimestamp: number
 ) => {
   return await db
     .insert(expenses)
     .values({
       title,
       amount,
-      date: Date.now(),
+      date: dateTimestamp,
       type,
       category,
     })

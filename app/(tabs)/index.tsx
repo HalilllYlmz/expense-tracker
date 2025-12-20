@@ -1,4 +1,6 @@
 import Dashboard from "@/components/Dashboard";
+import { format, isToday, isYesterday } from "date-fns";
+import { tr } from "date-fns/locale";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { Alert, FlatList, Text, TouchableOpacity, View } from "react-native";
@@ -11,6 +13,13 @@ export default function HomeScreen() {
   const loadData = async () => {
     const expenses = await getExpenses();
     setData(expenses);
+  };
+
+  const formatDate = (timestamp: number) => {
+    const date = new Date(timestamp);
+    if (isToday(date)) return "Bugün";
+    if (isYesterday(date)) return "Dün";
+    return format(date, "d MM yyyy", { locale: tr });
   };
 
   useFocusEffect(
@@ -58,7 +67,7 @@ export default function HomeScreen() {
                 {item.title}
               </Text>
               <Text className="text-gray-400 text-xs">
-                {new Date(item.date).toLocaleDateString()}
+                {formatDate(item.date)}
               </Text>
             </View>
             <Text
