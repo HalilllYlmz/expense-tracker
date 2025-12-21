@@ -127,6 +127,19 @@ export default function HomeScreen() {
         renderItem={({ item }) => (
           <TouchableOpacity
             onLongPress={() => handleDelete(item.id)}
+            onPress={() => {
+              router.push({
+                pathname: "/add-expense",
+                params: {
+                  id: item.id,
+                  title: item.title,
+                  amount: item.amount,
+                  category: item.category,
+                  type: item.type,
+                  date: item.date,
+                },
+              });
+            }}
             className="bg-gray-900 p-4 rounded-xl mb-3 flex-row justify-between items-center border border-gray-800"
           >
             <View className="flex-row items-center gap-4">

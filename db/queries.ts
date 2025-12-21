@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm"; // sql importunu unutma
+import { desc, eq, sql } from "drizzle-orm";
 import { db } from "./index";
 import { expenses } from "./schema";
 
@@ -40,6 +40,21 @@ export const addExpense = async (
       type,
       category,
     })
+    .returning();
+};
+
+export const updateExpense = async (
+  id: number,
+  title: string,
+  amount: number,
+  category: string,
+  type: "expense" | "income",
+  date: number
+) => {
+  return await db
+    .update(expenses)
+    .set({ title, amount, category, type, date })
+    .where(eq(expenses.id, id))
     .returning();
 };
 

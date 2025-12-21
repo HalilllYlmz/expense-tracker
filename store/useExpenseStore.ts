@@ -1,4 +1,9 @@
-import { addExpense, deleteExpense, getExpenses } from "@/db/queries";
+import {
+  addExpense,
+  deleteExpense,
+  getExpenses,
+  updateExpense,
+} from "@/db/queries";
 import { create } from "zustand";
 
 interface Expense {
@@ -16,6 +21,14 @@ interface ExpenseStore {
 
   loadExpenses: () => Promise<void>;
   addNewExpense: (
+    title: string,
+    amount: number,
+    category: string,
+    type: "income" | "expense",
+    date: number
+  ) => Promise<void>;
+  editExpense: (
+    id: number,
     title: string,
     amount: number,
     category: string,
@@ -58,7 +71,21 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
       throw e;
     }
   },
-
+  editExpense: async (id, title, amount, category, type, date) => {
+    try {
+      await updateExpense(id, title, amount, category, type, date);
+      set((state) => ({
+        expenses: state.expenses.map((item) =>
+          item.id === id
+            ? { ...item, title, amount, category, type, date }
+            : item
+        ),
+      }));
+    } catch (error) {
+      console.error("Store Error: ", error);
+      throw error;
+    }
+  },
   removeExpense: async (id) => {
     try {
       await deleteExpense(id);

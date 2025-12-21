@@ -6,9 +6,10 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { clsx } from "clsx";
 import { format } from "date-fns";
 import { tr } from "date-fns/locale";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+
 import {
   Alert,
   KeyboardAvoidingView,
@@ -33,9 +34,13 @@ type ExpenseFormData = z.infer<typeof expenseSchema>;
 
 export default function AddExpenseScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const isEditing = !!params.id;
+
+  const { addNewExpense, editExpense } = useExpenseStore();
+
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const addNewExpense = useExpenseStore((state) => state.addNewExpense);
 
   const {
     control,
@@ -52,6 +57,19 @@ export default function AddExpenseScreen() {
       category: "other",
     },
   });
+
+  useEffect(() => {
+    if (isEditing) {
+      setValue("title", params.title as string);
+      setValue("amount", Number(params.amount));
+      setValue("type", params.type as any);
+      setValue("category", params.category as string);
+
+      if (params.date) {
+        setDate(new Date(Number(params.date)));
+      }
+    }
+  }, [params.id]);
 
   const selectedType = watch("type");
 
@@ -71,14 +89,26 @@ export default function AddExpenseScreen() {
 
   const onSubmit = async (data: ExpenseFormData) => {
     try {
-      await addNewExpense(
-        data.title,
-        data.amount,
-        data.category,
-        data.type,
-        date.getTime()
-      );
-      Alert.alert("Başarılı", "İşlem kaydedildi ✅");
+      if (isEditing) {
+        await editExpense(
+          Number(params.id),
+          data.title,
+          data.amount,
+          data.category,
+          data.type,
+          date.getTime()
+        );
+        Alert.alert("Güncellendi", "Kayıt başarıyla düzenlendi ✅");
+      } else {
+        await addNewExpense(
+          data.title,
+          data.amount,
+          data.category,
+          data.type,
+          date.getTime()
+        );
+        Alert.alert("Başarılı", "İşlem kaydedildi ✅");
+      }
       router.back();
     } catch (error) {
       Alert.alert("Hata", "Kaydederken bir sorun oluştu.");
@@ -95,7 +125,6 @@ export default function AddExpenseScreen() {
       className="flex-1 bg-gray-950"
     >
       <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
-        {/* --- 1. Sekmeler (Tab) --- */}
         <View className="flex-row p-1 mx-4 mt-6 bg-gray-900/80 rounded-2xl border border-gray-800">
           <TouchableOpacity
             onPress={() => setValue("type", "expense")}
@@ -132,7 +161,6 @@ export default function AddExpenseScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* --- 2. Büyük Tutar Girişi --- */}
         <View className="items-center justify-center py-12">
           <Text className="text-gray-500 font-medium mb-2 uppercase tracking-widest text-[10px]">
             TUTAR GİRİN
@@ -163,9 +191,7 @@ export default function AddExpenseScreen() {
           )}
         </View>
 
-        {/* --- 3. Bilgi Kartı (Tarih ve Başlık) --- */}
         <View className="mx-4 bg-gray-900 rounded-3xl overflow-hidden border border-gray-800 mb-8">
-          {/* Tarih Satırı */}
           <TouchableOpacity
             onPress={() => setShowDatePicker(true)}
             activeOpacity={0.7}
@@ -180,11 +206,9 @@ export default function AddExpenseScreen() {
                 {format(date, "d MMMM yyyy", { locale: tr })}
               </Text>
             </View>
-            {/* Sağ tarafa küçük bir ok koyalım ki tıklanabilir olduğu belli olsun */}
             <Ionicons name="chevron-forward" size={20} color="#4b5563" />
           </TouchableOpacity>
 
-          {/* Başlık Satırı */}
           <View className="flex-row items-center p-5">
             <View className="w-10 h-10 rounded-full bg-gray-800 items-center justify-center mr-4">
               <Ionicons name="create" size={20} color="#9ca3af" />
@@ -196,7 +220,7 @@ export default function AddExpenseScreen() {
                 name="title"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
-                    className="text-white font-medium text-lg p-0 h-7" // Yüksekliği sabitledik
+                    className="text-white font-medium text-lg p-0 h-7"
                     placeholder="Örn: Market Fişi"
                     placeholderTextColor="#4b5563"
                     onBlur={onBlur}
@@ -214,7 +238,6 @@ export default function AddExpenseScreen() {
           )}
         </View>
 
-        {/* --- 4. Kategori Seçimi --- */}
         <View className="mx-4 mb-32">
           <Text className="text-gray-500 font-medium mb-4 ml-1">
             Kategori Seçin
@@ -253,7 +276,6 @@ export default function AddExpenseScreen() {
         </View>
       </ScrollView>
 
-      {/* --- Kaydet Butonu --- */}
       <View className="absolute bottom-10 left-0 right-0 px-6">
         <TouchableOpacity
           onPress={handleSubmit(onSubmit)}
@@ -262,13 +284,12 @@ export default function AddExpenseScreen() {
             activeBg
           )}
         >
-          <Text className="text-white font-bold text-xl">Kaydet</Text>
+          <Text className="text-white font-bold text-xl">
+            {isEditing ? "Güncelle" : "Kaydet"}
+          </Text>
         </TouchableOpacity>
       </View>
 
-      {/* --- TARİH SEÇİCİ MANTIĞI --- */}
-
-      {/* 1. Android İçin (Otomatik Modal açar) */}
       {Platform.OS === "android" && showDatePicker && (
         <DateTimePicker
           value={date}
@@ -279,7 +300,6 @@ export default function AddExpenseScreen() {
         />
       )}
 
-      {/* 2. iOS İçin (Özel Bottom Sheet Modal) */}
       {Platform.OS === "ios" && (
         <Modal
           transparent={true}
@@ -288,9 +308,7 @@ export default function AddExpenseScreen() {
           onRequestClose={() => setShowDatePicker(false)}
         >
           <View className="flex-1 justify-end bg-black/50">
-            {/* Modal İçeriği */}
             <View className="bg-gray-900 rounded-t-3xl border-t border-gray-800 pb-10">
-              {/* Başlık ve Kapatma Butonu */}
               <View className="flex-row justify-between items-center p-4 border-b border-gray-800">
                 <Text className="text-gray-400 font-medium">Tarih Seçin</Text>
                 <TouchableOpacity
@@ -301,16 +319,15 @@ export default function AddExpenseScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* iOS Spinner Date Picker */}
               <View className="p-4 bg-gray-900 items-center justify-center">
                 <DateTimePicker
                   value={date}
                   mode="date"
-                  display="spinner" // <-- İŞTE SİHİR BURADA
+                  display="spinner"
                   onChange={onChangeDate}
                   maximumDate={new Date()}
-                  textColor="white" // iOS'te yazıları beyaz yap
-                  themeVariant="dark" // Koyu tema zorlaması
+                  textColor="white"
+                  themeVariant="dark"
                 />
               </View>
             </View>
