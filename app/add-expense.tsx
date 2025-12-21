@@ -1,5 +1,5 @@
 import { CATEGORIES } from "@/constants/Categories";
-import { addExpense } from "@/db/queries";
+import { useExpenseStore } from "@/store/useExpenseStore";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -35,6 +35,7 @@ export default function AddExpenseScreen() {
   const router = useRouter();
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const addNewExpense = useExpenseStore((state) => state.addNewExpense);
 
   const {
     control,
@@ -54,11 +55,9 @@ export default function AddExpenseScreen() {
 
   const selectedType = watch("type");
 
-  // Tarih değişince
   const onChangeDate = (event: any, selectedDate?: Date) => {
     const currentDate = selectedDate || date;
 
-    // Android'de seçim yapınca otomatik kapanır
     if (Platform.OS === "android") {
       setShowDatePicker(false);
     }
@@ -66,14 +65,13 @@ export default function AddExpenseScreen() {
     setDate(currentDate);
   };
 
-  // iOS için "Bitti" butonu fonksiyonu
   const confirmIOSDate = () => {
     setShowDatePicker(false);
   };
 
   const onSubmit = async (data: ExpenseFormData) => {
     try {
-      await addExpense(
+      await addNewExpense(
         data.title,
         data.amount,
         data.category,

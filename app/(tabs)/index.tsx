@@ -1,74 +1,156 @@
 import Dashboard from "@/components/Dashboard";
-import { format, isToday, isYesterday } from "date-fns";
+import { CATEGORIES } from "@/constants/Categories";
+import { useExpenseStore } from "@/store/useExpenseStore";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import clsx from "clsx";
+import { format, isToday, isYesterday, subDays } from "date-fns";
 import { tr } from "date-fns/locale";
-import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { Alert, FlatList, Text, TouchableOpacity, View } from "react-native";
-import { deleteExpense, getExpenses } from "../../db/queries";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const [data, setData] = useState<any[]>([]);
 
-  const loadData = async () => {
-    const expenses = await getExpenses();
-    setData(expenses);
+  const { expenses, loadExpenses, removeExpense, loading } = useExpenseStore();
+
+  const [filterType, setFilterType] = useState<"week" | "month" | "all">(
+    "month"
+  );
+
+  useEffect(() => {
+    loadExpenses();
+  }, []);
+
+  const getFilteredExpenses = () => {
+    const now = new Date();
+    if (filterType === "week") {
+      const oneWeekAgo = subDays(now, 7);
+      return expenses.filter((e) => e.date >= oneWeekAgo.getTime());
+    }
+    if (filterType === "month") {
+      const oneMonthAgo = subDays(now, 30);
+      return expenses.filter((e) => e.date >= oneMonthAgo.getTime());
+    }
+    return expenses;
+  };
+
+  const filteredData = getFilteredExpenses();
+
+  const handleDelete = (id: number) => {
+    Alert.alert("Vazgeç", "Bu gideri silmek istediğinize emin misiniz?", [
+      { text: "Vazgeç", style: "cancel" },
+      { text: "Sil", style: "destructive", onPress: () => removeExpense(id) },
+    ]);
+  };
+
+  const getCategoryIcon = (catId: string, type: "expense" | "income") => {
+    const category = CATEGORIES[type].find((c) => c.id === catId);
+    return category ? category.icon : "help-circle";
   };
 
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
     if (isToday(date)) return "Bugün";
     if (isYesterday(date)) return "Dün";
-    return format(date, "d MM yyyy", { locale: tr });
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [])
-  );
-
-  const handleDelete = (id: number) => {
-    Alert.alert("Sil", "Bu harcamayı silmek istiyor musun?", [
-      { text: "Vazgeç", style: "cancel" },
-      {
-        text: "Sil",
-        style: "destructive",
-        onPress: async () => {
-          await deleteExpense(id);
-          loadData();
-        },
-      },
-    ]);
+    return format(date, "d MMM yyyy", { locale: tr });
   };
 
   return (
-    <View className="flex-1 bg-gray-900 pt-12 px-4">
+    <View className="flex-1 bg-gray-950 pt-12 px-4">
       <Text className="text-white text-3xl font-bold mb-4">Cüzdanım</Text>
 
+      <View className="flex-row bg-gray-900 p-1 rounded-xl mb-4 border border-gray-800">
+        <TouchableOpacity
+          onPress={() => setFilterType("week")}
+          className={clsx(
+            "flex-1 py-2 rounded-lg items-center",
+            filterType === "week" ? "bg-gray-800" : ""
+          )}
+        >
+          <Text
+            className={clsx(
+              "font-medium text-xs",
+              filterType === "week" ? "text-white" : "text-gray-500"
+            )}
+          >
+            7 Gün
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => setFilterType("month")}
+          className={clsx(
+            "flex-1 py-2 rounded-lg items-center",
+            filterType === "month" ? "bg-gray-800" : ""
+          )}
+        >
+          <Text
+            className={clsx(
+              "font-medium text-xs",
+              filterType === "month" ? "text-white" : "text-gray-500"
+            )}
+          >
+            30 Gün
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => setFilterType("all")}
+          className={clsx(
+            "flex-1 py-2 rounded-lg items-center",
+            filterType === "all" ? "bg-gray-800" : ""
+          )}
+        >
+          <Text
+            className={clsx(
+              "font-medium text-xs",
+              filterType === "all" ? "text-white" : "text-gray-500"
+            )}
+          >
+            Tümü
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <FlatList
-        data={data}
+        data={filteredData}
         keyExtractor={(item) => item.id.toString()}
         ListHeaderComponent={
           <View className="mb-2">
-            <Dashboard expenses={data} />
+            <Dashboard expenses={filteredData} />
             <Text className="text-gray-400 font-bold mb-2 mt-2">
-              Son Hareketler
+              Hareketler ({filteredData.length})
             </Text>
           </View>
         }
         renderItem={({ item }) => (
           <TouchableOpacity
-            onLongPress={() => handleDelete(item.id)} // Uzun basınca sil
-            className="bg-gray-800 p-4 rournded-xl mb-3 flex-row justify-between items-center border border-gray-700"
+            onLongPress={() => handleDelete(item.id)}
+            className="bg-gray-900 p-4 rounded-xl mb-3 flex-row justify-between items-center border border-gray-800"
           >
-            <View>
-              <Text className="text-white font-semibold text-lg">
-                {item.title}
-              </Text>
-              <Text className="text-gray-400 text-xs">
-                {formatDate(item.date)}
-              </Text>
+            <View className="flex-row items-center gap-4">
+              <View
+                className={`w-12 h-12 rounded-full items-center justify-center ${
+                  item.type === "income" ? "bg-green-900/30" : "bg-red-900/30"
+                }`}
+              >
+                <Ionicons
+                  name={
+                    getCategoryIcon(item.category || "other", item.type) as any
+                  }
+                  size={24}
+                  color={item.type === "income" ? "#4ade80" : "#f87171"}
+                />
+              </View>
+              <View>
+                <Text className="text-white font-semibold text-lg">
+                  {item.title}
+                </Text>
+                <Text className="text-gray-500 text-xs">
+                  {formatDate(item.date)}
+                </Text>
+              </View>
             </View>
             <Text
               className={`font-bold text-xl ${
@@ -82,7 +164,7 @@ export default function HomeScreen() {
         )}
         ListEmptyComponent={
           <Text className="text-gray-500 text-center mt-20 text-lg">
-            Harcama yok 🎉
+            Bu aralıkta işlem yok.
           </Text>
         }
       />
@@ -91,7 +173,7 @@ export default function HomeScreen() {
         onPress={() => router.push("/add-expense")}
         className="absolute bottom-10 right-6 bg-blue-600 w-16 h-16 rounded-full items-center justify-center shadow-lg active:bg-blue-700"
       >
-        <Text className="text-white text-4xl pb-1">+</Text>
+        <Ionicons name="add" size={36} color="white" />
       </TouchableOpacity>
     </View>
   );
