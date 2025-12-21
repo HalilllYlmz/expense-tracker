@@ -7,16 +7,24 @@ import { format, isToday, isYesterday, subDays } from "date-fns";
 import { tr } from "date-fns/locale";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Alert, FlatList, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  FlatList,
+  Keyboard,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function HomeScreen() {
   const router = useRouter();
-
   const { expenses, loadExpenses, removeExpense, loading } = useExpenseStore();
 
   const [filterType, setFilterType] = useState<"week" | "month" | "all">(
     "month"
   );
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     loadExpenses();
@@ -24,15 +32,26 @@ export default function HomeScreen() {
 
   const getFilteredExpenses = () => {
     const now = new Date();
+    let filtered = expenses;
+
     if (filterType === "week") {
       const oneWeekAgo = subDays(now, 7);
-      return expenses.filter((e) => e.date >= oneWeekAgo.getTime());
-    }
-    if (filterType === "month") {
+      filtered = filtered.filter((e) => e.date >= oneWeekAgo.getTime());
+    } else if (filterType === "month") {
       const oneMonthAgo = subDays(now, 30);
-      return expenses.filter((e) => e.date >= oneMonthAgo.getTime());
+      filtered = filtered.filter((e) => e.date >= oneMonthAgo.getTime());
     }
-    return expenses;
+
+    if (searchQuery.trim() !== "") {
+      filtered = filtered.filter(
+        (e) =>
+          e.title.toLowerCase().includes(searchQuery.toLowerCase()) || // Başlıkta ara
+          (e.category &&
+            e.category.toLowerCase().includes(searchQuery.toLowerCase())) // Kategoride ara
+      );
+    }
+
+    return filtered;
   };
 
   const filteredData = getFilteredExpenses();
@@ -59,6 +78,28 @@ export default function HomeScreen() {
   return (
     <View className="flex-1 bg-gray-950 pt-12 px-4">
       <Text className="text-white text-3xl font-bold mb-4">Cüzdanım</Text>
+
+      <View className="flex-row items-center bg-gray-900 p-3 rounded-xl border border-gray-800 mb-4">
+        <Ionicons name="search" size={20} color="#9ca3af" />
+        <TextInput
+          className="flex-1 ml-3 text-white font-medium h-full"
+          placeholder="Harcama ara..."
+          placeholderTextColor="#6b7280"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          returnKeyType="search"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity
+            onPress={() => {
+              setSearchQuery("");
+              Keyboard.dismiss();
+            }}
+          >
+            <Ionicons name="close-circle" size={20} color="#6b7280" />
+          </TouchableOpacity>
+        )}
+      </View>
 
       <View className="flex-row bg-gray-900 p-1 rounded-xl mb-4 border border-gray-800">
         <TouchableOpacity
