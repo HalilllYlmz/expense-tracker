@@ -1,5 +1,6 @@
 import {
   addExpense,
+  deleteAllExpenses,
   deleteExpense,
   getExpenses,
   updateExpense,
@@ -36,6 +37,7 @@ interface ExpenseStore {
     date: number
   ) => Promise<void>;
   removeExpense: (id: number) => Promise<void>;
+  resetAllData: () => Promise<void>;
 }
 
 export const useExpenseStore = create<ExpenseStore>((set, get) => ({
@@ -94,6 +96,14 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
       }));
     } catch (e) {
       console.error("Store Silme Hatası:", e);
+    }
+  },
+  resetAllData: async () => {
+    try {
+      await deleteAllExpenses();
+      set({ expenses: [] });
+    } catch (error) {
+      console.error("Sıfırlama Hatası ", error);
     }
   },
 }));

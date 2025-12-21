@@ -61,3 +61,7 @@ export const updateExpense = async (
 export const deleteExpense = async (id: number) => {
   return await db.delete(expenses).where(eq(expenses.id, id));
 };
+
+export const deleteAllExpenses = async () => {
+  return await db.delete(expenses);
+};
