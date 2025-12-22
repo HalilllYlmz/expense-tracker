@@ -8,3 +8,8 @@ export const expenses = sqliteTable("expenses", {
   type: text("type").default("expense"),
   category: text("category").default("Diğer"),
 });
+
+export const budgets = sqliteTable("budgets", {
+  category: text("category").primaryKey(),
+  amount: real("amount").notNull(),
+});

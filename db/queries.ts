@@ -1,6 +1,6 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "./index";
-import { expenses } from "./schema";
+import { budgets, expenses } from "./schema";
 
 export const initDatabase = async () => {
   try {
@@ -14,6 +14,14 @@ export const initDatabase = async () => {
         category TEXT DEFAULT 'Diğer'
       );
     `);
+
+    await db.run(sql`
+      CREATE TABLE IF NOT EXISTS budgets (
+        category TEXT PRIMARY KEY,
+        amount REAL NOT NULL
+      );
+    `);
+
     console.log("✅ Veritabanı ve Tablo Hazır");
   } catch (error) {
     console.error("❌ Veritabanı başlatma hatası:", error);
@@ -64,4 +72,18 @@ export const deleteExpense = async (id: number) => {
 
 export const deleteAllExpenses = async () => {
   return await db.delete(expenses);
+};
+
+export const getBudgets = async () => {
+  return await db.select().from(budgets);
+};
+
+export const setBudget = async (category: string, amount: number) => {
+  return await db
+    .insert(budgets)
+    .values({ category, amount })
+    .onConflictDoUpdate({
+      target: budgets.category,
+      set: { amount },
+    });
 };

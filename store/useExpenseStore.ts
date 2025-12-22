@@ -2,7 +2,9 @@ import {
   addExpense,
   deleteAllExpenses,
   deleteExpense,
+  getBudgets,
   getExpenses,
+  setBudget,
   updateExpense,
 } from "@/db/queries";
 import { create } from "zustand";
@@ -16,8 +18,14 @@ interface Expense {
   category: string;
 }
 
+interface Budget {
+  category: string;
+  amount: number;
+}
+
 interface ExpenseStore {
   expenses: Expense[];
+  budgets: Budget[];
   loading: boolean;
 
   loadExpenses: () => Promise<void>;
@@ -38,17 +46,26 @@ interface ExpenseStore {
   ) => Promise<void>;
   removeExpense: (id: number) => Promise<void>;
   resetAllData: () => Promise<void>;
+
+  saveCategoryBudget: (category: string, amount: number) => Promise<void>;
 }
 
 export const useExpenseStore = create<ExpenseStore>((set, get) => ({
   expenses: [],
+  budgets: [],
   loading: false,
 
   loadExpenses: async () => {
     set({ loading: true });
     try {
       const data = await getExpenses();
-      set({ expenses: data as Expense[], loading: false });
+      const budgetData = await getBudgets(); // <-- Bütçeleri çek
+
+      set({
+        expenses: data as any[],
+        budgets: budgetData as Budget[], // <-- Store'a kaydet
+        loading: false,
+      });
     } catch (e) {
       console.error(e);
       set({ loading: false });
@@ -104,6 +121,28 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
       set({ expenses: [] });
     } catch (error) {
       console.error("Sıfırlama Hatası ", error);
+    }
+  },
+  saveCategoryBudget: async (category, amount) => {
+    try {
+      await setBudget(category, amount);
+
+      set((state) => {
+        const existingIndex = state.budgets.findIndex(
+          (b) => b.category === category
+        );
+        let newBudgets = [...state.budgets];
+
+        if (existingIndex >= 0) {
+          newBudgets[existingIndex] = { category, amount }; // Güncelle
+        } else {
+          newBudgets.push({ category, amount }); // Ekle
+        }
+
+        return { budgets: newBudgets };
+      });
+    } catch (e) {
+      console.error("Bütçe Hatası:", e);
     }
   },
 }));
